@@ -1,0 +1,33 @@
+{
+  "name": "audioPlayer",
+  "version": "0.0.1",
+  "description": "html5 audio player",
+  "homepage": "https://github.com/zhangchen2397/audioPlayer.git",
+  "main": "",
+  "scripts": {},
+  "keywords": [
+    "audio",
+    "player",
+    "audio player"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhangchen2397/audioPlayer.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.9.0",
+    "css-loader": "^0.23.1",
+    "extract-text-webpack-plugin": "^1.0.1",
+    "html-loader": "^0.4.3",
+    "less": "^2.7.1",
+    "less-loader": "^2.2.3",
+    "style-loader": "^0.13.1",
+    "url-loader": "^0.5.7",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
+  },
+  "author": "zhangchen2397@126.com",
+  "license": "MIT"
+}

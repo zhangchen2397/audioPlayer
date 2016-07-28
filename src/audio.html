@@ -1,0 +1,46 @@
+<% var curInfo = data[0]; %>
+<div class="audio-player">
+    <div>
+        <div class="cover">
+            <img class="cover" src="<%= curInfo.cover %>" />
+            <i class="iconfont cover-play-btn icon-pause"></i>
+        </div>
+
+        <div class="info">
+            <h3><%= curInfo.title %><span><%= curInfo.author %></span></h3>
+
+            <ul class="play-control">
+                <li class="time play-time">00:00</li>
+                <li class="play-bar">
+                    <div class="loaded"></div>
+                    <div class="played">
+                        <div class="pointer"></div>
+                    </div>
+                </li>
+                <li class="time total-time">00:00</li>
+            </ul>
+
+            <ul class="play-act">
+                <li class="iconfont act-side icon-loop"></li>
+                <li class="iconfont act-mid icon-presong"></li>
+                <li class="iconfont play-btn icon-pause"></li>
+                <li class="iconfont act-mid icon-nextsong"></li>
+                <li class="iconfont act-side icon-list"></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="play-list">
+        <ul>
+            <% for (var i = 0; i < data.length; i++) { %>
+                <% var idx = i + 1; %>
+                <% var item = data[i]; %>
+                <li data-idx=<%= i %> <% if (i === 0) { %>class="cur"<% } %>>
+                    <span class="idx"><%= idx %></span>
+                    <span class="title"><%= item.title %></span>
+                    <span class="author"><%= item.author %></span>
+                </li>
+            <% } %>
+        </ul>
+    </div>
+</div>
