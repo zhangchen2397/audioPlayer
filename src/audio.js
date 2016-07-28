@@ -13,7 +13,8 @@
  * @method nextPlay 下一首
  * @method switchPlay 指定列表索引播放
  * @method togglePlay 切换播放与暂停
- * @method toggleLoop 切换是否循环播放
+ * @method setLoopType 设置循环播放方式
+ * @method addtoPlayList 添加歌曲到播放列表
  *
  * @customEvent play 开始播放
  * @customEvent pause 暂停播放
@@ -49,13 +50,20 @@ import customEvent from './lib/customEvent.js'
 
 import './audio.less';
 import tpl from './audio.html';
+import listTpl from './list.html';
 
 const defaultConfig = {
     id: 'player-wrap',      //播放器容器id
-    preload: 'metadata',    //预加载方式
-    isLoop: true,           //是否循环播放
     isAutoplay: true,       //是否自动播放
     tpl: tpl,               //音频播放器模板
+
+    /**
+     * loopType {string} 播放循环方式
+     *   none: 不循环,
+     *   single: 单曲循环
+     *   order: 顺序循环
+     */
+    loopType: 'order',
 
     /**
      * data {array} 音频数据，数组的每一项为对象
@@ -74,6 +82,7 @@ class AudioPlayer {
     }
 
     init() {
+        this._initStatus();
         this._createAudio();
         this._createPlayer();
         this._cache();
@@ -87,13 +96,8 @@ class AudioPlayer {
             config = this.config;
 
         this.audio = document.createElement('audio');
-        this.audio.setAttribute('src', config.data[0].src);
-        this.audio.setAttribute('preload', config.preload);
-
-        //如果只有一首，通过loop属性设置是否循环播放
-        if (config.data.length < 2 && config.isLoop) {
-            this.audio.setAttribute('loop', 'loop');
-        }
+        this.audio.setAttribute('src', this.data[0].src);
+        this.audio.setAttribute('preload', 'metadata');
 
         if (config.isAutoplay) {
             this.play();
@@ -102,13 +106,27 @@ class AudioPlayer {
         document.body.appendChild(this.audio);
     }
 
-    _createPlayer() {
+    _initStatus() {
         let me = this,
             config = this.config;
 
+        this.playStatus = config.isAutoplay ? 'play' : 'pause';
+        this.playListStatus = 'show';
+        this.playIdx = 0;
+        this.data = config.data;
+        this.loopType = config.loopType;
+        this.totalNum = this.data.length;
+    }
+
+    _createPlayer() {
+        let me = this,
+            config = this.config,
+            playIcon = (this.playStatus === 'play') ? 'pause' : 'play';
+
         this.el = $(`#${config.id}`);
         this.el.html(render(config.tpl, {
-            data: config.data
+            data: this.data,
+            playIcon: playIcon
         }));
     }
 
@@ -127,21 +145,14 @@ class AudioPlayer {
         this.playListBtn = el.find('.icon-list');
         this.playListWrap = el.find('.play-list');
         this.playListItems = this.playListWrap.find('li');
+
         this.nextBtn = el.find('.icon-nextsong');
         this.preBtn = el.find('.icon-presong');
         this.cover = el.find('img.cover');
         this.title = el.find('.info h3');
         this.loopBtn = el.find('.icon-loop');
-
         this.playBtn = el.find('.play-btn');
         this.coverPlayBtn = el.find('.cover-play-btn');
-
-        //init status
-        this.playStatus = config.isAutoplay ? 'play' : 'pause';
-        this.playListStatus = 'show';
-        this.playIdx = 0;
-        this.totalNum = config.data.length;
-        this.isLoop = config.isLoop;
 
         //event callback cache
         this.tempMovePlaybar = $.proxy(this._movePlaybar, this);
@@ -179,18 +190,28 @@ class AudioPlayer {
             me.loadedBar.css('width', loadedPercent * 100 + '%');
 
             $.trigger(this, 'playing', [{
-                song: config.data[this.playIdx],
+                song: me.data[this.playIdx],
                 loadedPercent: loadedPercent
             }]);
         }, false);
 
         audio.addEventListener('ended', (event) => {
-            if (this.isLoop) {
-                this.nextPlay();
+            switch(this.loopType) {
+                case 'order':
+                    this.nextPlay();
+                    break;
+                case 'single':
+                    this.switchPlay(this.playIdx);
+                    break;
+                case 'none':
+                    this.togglePlay();
+                    break;
+                default:
+                    break;
             }
 
             $.trigger(this, 'ended', [{
-                song: config.data[this.playIdx]
+                song: me.data[this.playIdx]
             }]);
         }, false);
 
@@ -199,7 +220,7 @@ class AudioPlayer {
 
         this.el.on('click', '.play-btn, .cover-play-btn', $.proxy(this.togglePlay, this));
         this.playBar.on('click', $.proxy(this.assignPlay, this));
-        this.loopBtn.on('click', $.proxy(this.toggleLoop, this));
+        this.loopBtn.on('click', $.proxy(this._toggleOrderLoop, this));
 
         playPointer.on('touchmove', $.proxy(this._movePlaybar, this));
         playPointer.on('touchend', $.proxy(this.assignPlay, this));
@@ -230,23 +251,51 @@ class AudioPlayer {
         this.switchPlay(idx);
     }
 
-    toggleLoop() {
-        if (this.isLoop) {
-            this.isLoop = false;
-            this.loopBtn.addClass('gray');
-
-            //如果只有一首，操作loop属性
-            if (this.totalNum < 2) {
-                this.audio.removeAttribute('loop');
-            }
-        } else {
-            this.isLoop = true;
-            this.loopBtn.removeClass('gray');
-
-            if (this.totalNum < 2) {
-                this.audio.setAttribute('loop');
-            }
+    _toggleOrderLoop(event) {
+        switch(this.loopType) {
+            case 'order':
+                this.loopType = 'none';
+                this.loopBtn.addClass('gray');
+                break;
+            case 'none':
+                this.loopType = 'order';
+                this.loopBtn.removeClass('gray');
+                break;
+            default:
+                break;
         }
+    }
+
+    /**
+     * 设置循环播放方式
+     * type {string} 循环播放方式
+     *  none: 不循环
+     *  order: 顺序循环
+     *  single: 单曲循环
+     */
+    setLoopType(type) {
+        this.loopType = type;
+    }
+
+    /**
+     * 添加新歌曲到播放列表
+     * song {object} 需要添加的歌曲对象
+     *  title: 歌名
+     *  author: 作者
+     *  src: 音频地址
+     *  cover: 音频封面图
+     */
+    addtoPlayList(song) {
+        this.totalNum++;
+        this.data.push(song);
+
+        //render list template
+        song.idx = this.totalNum;
+        this.playListWrap.append(render(listTpl, song));
+
+        $.trigger(this, 'afterAddtoPlayList', [{
+            song: song
+        }]);
     }
 
     /**
@@ -269,7 +318,7 @@ class AudioPlayer {
 
         if (this.playIdx === idx) return;
 
-        let songData = config.data[idx];
+        let songData = this.data[idx];
         playListItems.removeClass('cur');
         $(playListItems.get(idx)).addClass('cur');
 
@@ -319,8 +368,10 @@ class AudioPlayer {
 
         this.clearPlayTimer();
 
+        //根据不同的事件取相应的坐标值
         let pointerClientX = event.clientX || event.touches[0].clientX;
-        let curPercent = Math.min((pointerClientX - this.playBarClientX) / this.playBarWidth, 1);
+        let offsetX = pointerClientX - this.playBarClientX;
+        let curPercent = Math.min(offsetX / this.playBarWidth, 1);
 
         this.playedBar.css('width', curPercent * 100 + '%');
         this.playTime.html(this.formatSeconds(this.audio.duration * curPercent));
@@ -364,7 +415,7 @@ class AudioPlayer {
         }
 
         $.trigger(this, 'play', [{
-            song: config.data[this.playIdx]
+            song: me.data[this.playIdx]
         }]);
     }
 
@@ -384,7 +435,7 @@ class AudioPlayer {
         this.coverPlayBtn.addClass('icon-play');
 
         $.trigger(this, 'pause', [{
-            songInfo: config.data[this.playIdx]
+            songInfo: me.data[this.playIdx]
         }]);
     }
 

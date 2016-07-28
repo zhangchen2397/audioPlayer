@@ -3,7 +3,7 @@
     <div>
         <div class="cover">
             <img class="cover" src="<%= curInfo.cover %>" />
-            <i class="iconfont cover-play-btn icon-pause"></i>
+            <i class="iconfont cover-play-btn icon-<%= playIcon %>"></i>
         </div>
 
         <div class="info">
@@ -23,7 +23,7 @@
             <ul class="play-act">
                 <li class="iconfont act-side icon-loop"></li>
                 <li class="iconfont act-mid icon-presong"></li>
-                <li class="iconfont play-btn icon-pause"></li>
+                <li class="iconfont play-btn icon-<%= playIcon %>"></li>
                 <li class="iconfont act-mid icon-nextsong"></li>
                 <li class="iconfont act-side icon-list"></li>
             </ul>
