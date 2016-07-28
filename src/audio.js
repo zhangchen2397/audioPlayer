@@ -1,6 +1,6 @@
 /**
  * html5 audio player 音频播放器组件
- * 可调用封装好的api，包装各种皮肤的播放器
+ * 适用于pc及移动端，可单独定制皮肤
  * 提供（播放进度条，拖拽定位/快进/快退播放，连播/播放列表/循环播放，上下曲）
  * @date 2016-07-28
  * @author samczhang@tencent.com
@@ -179,41 +179,9 @@ class AudioPlayer {
             playPointer = this.playPointer,
             audio = this.audio;
 
-        audio.addEventListener('durationchange', (event) => {
-            me.totalTime.html(me.formatSeconds(audio.duration));
-        }, false);
-
-        audio.addEventListener('progress', (event) => {
-            let loadedPercent = audio.buffered.length ? 
-                audio.buffered.end(audio.buffered.length - 1) / audio.duration : 0;
-
-            me.loadedBar.css('width', loadedPercent * 100 + '%');
-
-            $.trigger(this, 'playing', [{
-                song: me.data[this.playIdx],
-                loadedPercent: loadedPercent
-            }]);
-        }, false);
-
-        audio.addEventListener('ended', (event) => {
-            switch(this.loopType) {
-                case 'order':
-                    this.nextPlay();
-                    break;
-                case 'single':
-                    this.switchPlay(this.playIdx);
-                    break;
-                case 'none':
-                    this.togglePlay();
-                    break;
-                default:
-                    break;
-            }
-
-            $.trigger(this, 'ended', [{
-                song: me.data[this.playIdx]
-            }]);
-        }, false);
+        audio.addEventListener('durationchange', $.proxy(this._durationchangeCb, this), false);
+        audio.addEventListener('progress', $.proxy(this._progressCb, this), false);
+        audio.addEventListener('ended', $.proxy(this._endedCb, this), false);
 
         $(window).on('resize', $.proxy(this._setPlaybarPos, this));
         $(window).on('orientationchange', $.proxy(this._setPlaybarPos, this));
@@ -231,6 +199,46 @@ class AudioPlayer {
 
         this.preBtn.on('click', $.proxy(this.prePlay, this));
         this.nextBtn.on('click', $.proxy(this.nextPlay, this));
+    }
+
+    _durationchangeCb() {
+        this.totalTime.html(this.formatSeconds(this.audio.duration));
+    }
+
+    _progressCb(event) {
+        let me = this,
+            config = this.config,
+            audio = this.audio;
+
+        let loadedPercent = audio.buffered.length ? 
+            audio.buffered.end(audio.buffered.length - 1) / audio.duration : 0;
+
+        this.loadedBar.css('width', loadedPercent * 100 + '%');
+
+        $.trigger(this, 'playing', [{
+            song: this.data[this.playIdx],
+            loadedPercent: loadedPercent
+        }]);
+    }
+
+    _endedCb(event) {
+        switch(this.loopType) {
+            case 'order':
+                this.nextPlay();
+                break;
+            case 'single':
+                this.switchPlay(this.playIdx);
+                break;
+            case 'none':
+                this.togglePlay();
+                break;
+            default:
+                break;
+        }
+
+        $.trigger(this, 'ended', [{
+            song: this.data[this.playIdx]
+        }]);
     }
 
     prePlay() {
