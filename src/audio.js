@@ -1,14 +1,69 @@
+/**
+ * html5 audio player 音频播放器组件
+ * 可调用封装好的api，包装各种皮肤的播放器
+ * 提供（播放进度条，拖拽定位/快进/快退播放，连播/播放列表/循环播放，上下曲）
+ * @date 2016-07-28
+ * @author samczhang@tencent.com
+ * --------------------------------------
+ *
+ * 对外调用接口及自定义事件
+ * @method play 播放
+ * @method pause 暂停
+ * @method prePlay 上一首
+ * @method nextPlay 下一首
+ * @method switchPlay 指定列表索引播放
+ * @method togglePlay 切换播放与暂停
+ * @method toggleLoop 切换是否循环播放
+ *
+ * @customEvent play 开始播放
+ * @customEvent pause 暂停播放
+ * @customEvent playing 播放中
+ * @customEvent ended 播放结束
+ * --------------------------------------
+ *
+ * 使用demo
+ *   new AudioPlayer({
+ *       data: [{
+ *           title: '曾经的你',
+ *           author: '许巍',
+ *           src: '/example/asset/music/once.mp3',
+ *           cover: '/example/asset/image/cover_once.jpeg'
+ *       }, {
+ *           title: 'You\'re Beautiful',
+ *           author: 'James Blunt',
+ *           src: '/example/asset/music/you_are_beautiful.mp4',
+ *           cover: '/example/asset/image/cover_yab.jpg'
+ *       }, {
+ *           title: 'I\'m Yours',
+ *           author: 'Jason Mraz',
+ *           src: '/example/asset/music/i_am_yours.mp4',
+ *           cover: '/example/asset/image/cover_iay.jpg'
+ *       }]
+ *   });
+ * 
+ */
+
 import $ from './lib/zepto.js';
 import render from './lib/render.js';
+import customEvent from './lib/customEvent.js'
+
 import './audio.less';
 import tpl from './audio.html';
 
 const defaultConfig = {
-    id: 'player-wrap',
-    preload: 'metadata',
-    isLoop: true,
-    isAutoplay: true,
-    tpl: tpl,
+    id: 'player-wrap',      //播放器容器id
+    preload: 'metadata',    //预加载方式
+    isLoop: true,           //是否循环播放
+    isAutoplay: true,       //是否自动播放
+    tpl: tpl,               //音频播放器模板
+
+    /**
+     * data {array} 音频数据，数组的每一项为对象
+     *  title: 歌名
+     *  author: 作者
+     *  src: 音频地址
+     *  cover: 音频封面图
+     */
     data: []
 };
 
@@ -35,6 +90,7 @@ class AudioPlayer {
         this.audio.setAttribute('src', config.data[0].src);
         this.audio.setAttribute('preload', config.preload);
 
+        //如果只有一首，通过loop属性设置是否循环播放
         if (config.data.length < 2 && config.isLoop) {
             this.audio.setAttribute('loop', 'loop');
         }
@@ -92,12 +148,14 @@ class AudioPlayer {
         this.tempMouseupCb = $.proxy(this._mouseupCb, this);
     }
 
+    //设置及缓存播放进度条位置信息，方便计算百分比
     _setPlaybarPos() {
         let playBarPos = this.playBar[0].getBoundingClientRect();
         this.playBarClientX = playBarPos.left;
         this.playBarWidth = playBarPos.width;
     }
 
+    //初始化及缓存播放列表高度，做动画需要
     _setPlayListHeight() {
         let playListWrap = this.playListWrap;
         this.playListHeight = playListWrap.height();
@@ -119,27 +177,36 @@ class AudioPlayer {
                 audio.buffered.end(audio.buffered.length - 1) / audio.duration : 0;
 
             me.loadedBar.css('width', loadedPercent * 100 + '%');
+
+            $.trigger(this, 'playing', [{
+                song: config.data[this.playIdx],
+                loadedPercent: loadedPercent
+            }]);
         }, false);
 
         audio.addEventListener('ended', (event) => {
             if (this.isLoop) {
                 this.nextPlay();
             }
+
+            $.trigger(this, 'ended', [{
+                song: config.data[this.playIdx]
+            }]);
         }, false);
 
         $(window).on('resize', $.proxy(this._setPlaybarPos, this));
         $(window).on('orientationchange', $.proxy(this._setPlaybarPos, this));
 
         this.el.on('click', '.play-btn, .cover-play-btn', $.proxy(this.togglePlay, this));
-        this.playBar.on('click', $.proxy(this._assignPlay, this));
-        this.loopBtn.on('click', $.proxy(this._setLoop, this));
+        this.playBar.on('click', $.proxy(this.assignPlay, this));
+        this.loopBtn.on('click', $.proxy(this.toggleLoop, this));
 
         playPointer.on('touchmove', $.proxy(this._movePlaybar, this));
-        playPointer.on('touchend', $.proxy(this._assignPlay, this));
+        playPointer.on('touchend', $.proxy(this.assignPlay, this));
         playPointer.on('mousedown', $.proxy(this._mousedownCb, this));
 
         this.playListBtn.on('click', $.proxy(this._togglePlayList, this));
-        this.playListWrap.on('click', 'li', $.proxy(this._switchPlay, this));
+        this.playListWrap.on('click', 'li', $.proxy(this.switchPlay, this));
 
         this.preBtn.on('click', $.proxy(this.prePlay, this));
         this.nextBtn.on('click', $.proxy(this.nextPlay, this));
@@ -151,7 +218,7 @@ class AudioPlayer {
             idx = this.totalNum - 1;
         }
 
-        this._switchPlay(idx);
+        this.switchPlay(idx);
     }
 
     nextPlay() {
@@ -160,20 +227,37 @@ class AudioPlayer {
             idx = 0;
         }
 
-        this._switchPlay(idx);
+        this.switchPlay(idx);
     }
 
-    _setLoop(event) {
+    toggleLoop() {
         if (this.isLoop) {
             this.isLoop = false;
             this.loopBtn.addClass('gray');
+
+            //如果只有一首，操作loop属性
+            if (this.totalNum < 2) {
+                this.audio.removeAttribute('loop');
+            }
         } else {
             this.isLoop = true;
             this.loopBtn.removeClass('gray');
+
+            if (this.totalNum < 2) {
+                this.audio.setAttribute('loop');
+            }
         }
     }
 
-    _switchPlay(event) {
+    /**
+     * 歌曲播放切换
+     * event {event object | idx}
+     * 接收参数有两种方式
+     *  一种通过事件event找到需要播放的idx
+     *  直接传入需要播放的idx
+     * idx 从0开始
+     */
+    switchPlay(event) {
         let me = this,
             config = this.config,
             playListItems = this.playListItems,
@@ -226,7 +310,7 @@ class AudioPlayer {
         playPointer.unbind('mousemove', this.tempMovePlaybar);
         playPointer.unbind('mouseup', this.tempMouseupCb);
 
-        this._assignPlay(event);
+        this.assignPlay(event);
     }
 
     _movePlaybar(event) {
@@ -242,7 +326,7 @@ class AudioPlayer {
         this.playTime.html(this.formatSeconds(this.audio.duration * curPercent));
     }
 
-    _assignPlay(event) {
+    assignPlay(event) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -278,10 +362,18 @@ class AudioPlayer {
             this.playBtn.removeClass('icon-play');
             this.coverPlayBtn.removeClass('icon-play');
         }
+
+        $.trigger(this, 'play', [{
+            song: config.data[this.playIdx]
+        }]);
     }
 
     pause() {
-        this.audio.pause();
+        var me = this,
+            config = this.config,
+            audio = this.audio;
+
+        audio.pause();
         this.playStatus = 'pause';
 
         this.clearPlayTimer();
@@ -290,6 +382,10 @@ class AudioPlayer {
         this.coverPlayBtn.removeClass('icon-pause');
         this.playBtn.addClass('icon-play');
         this.coverPlayBtn.addClass('icon-play');
+
+        $.trigger(this, 'pause', [{
+            songInfo: config.data[this.playIdx]
+        }]);
     }
 
     startPlayTimer() {
