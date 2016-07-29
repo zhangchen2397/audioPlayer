@@ -3,9 +3,9 @@ HTML5 audio player
 
 [先点击查看demo](https://zhangchen2397.github.io/audioPlayer/example/)
 
-![qr code](https://zhangchen2397.github.io/audioPlayer/doc/qrcode.png =200x200)
+![qr code](https://zhangchen2397.github.io/audioPlayer/doc/qrcode.png)
 
-![player](https://zhangchen2397.github.io/audioPlayer/doc/player.png =444x184)
+![player](https://zhangchen2397.github.io/audioPlayer/doc/player.png)
 
 
 ###组件简介
