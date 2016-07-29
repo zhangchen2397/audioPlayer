@@ -1,11 +1,11 @@
 HTML5 audio player
 ======
 
-[先点击查看demo](https://zhangchen2397.github.io/audioPlayer/example/) (建议扫描下方二维码手机上体验效果更佳)
+[先点击查看demo](https://zhangchen2397.github.io/audioPlayer/example/)
 
-![qr code](https://zhangchen2397.github.io/audioPlayer/doc/qrcode.png)
+![qr code](https://zhangchen2397.github.io/audioPlayer/doc/qrcode.png =200x200)
 
-![player](https://zhangchen2397.github.io/audioPlayer/doc/player.png)
+![player](https://zhangchen2397.github.io/audioPlayer/doc/player.png =444x184)
 
 
 ###组件简介
