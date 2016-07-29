@@ -1,9 +1,7 @@
 HTML5 audio player
 ======
 
-[先点击查看demo](https://zhangchen2397.github.io/audioPlayer/example/)
-
-![qr code](https://zhangchen2397.github.io/audioPlayer/doc/qrcode.png)
+先点击查看demo [https://zhangchen2397.github.io/audioPlayer/example/](https://zhangchen2397.github.io/audioPlayer/example/)
 
 ![player](https://zhangchen2397.github.io/audioPlayer/doc/player.png)
 
