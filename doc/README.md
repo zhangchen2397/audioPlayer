@@ -98,7 +98,7 @@ const defaultConfig = {
 })();
 ```
 
-###本地二次开发与调试
+###本地二次开发与调度
 ```
 git clone https://github.com/zhangchen2397/audioPlayer.git
 cd audioPlayer
