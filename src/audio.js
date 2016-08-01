@@ -80,7 +80,7 @@ const defaultConfig = {
 
 class AudioPlayer {
     constructor(config) {
-        this.config = this.extend({}, defaultConfig, config || {});
+        this.config = $.extend({}, defaultConfig, config || {});
         this.init();
     }
 
@@ -495,19 +495,6 @@ class AudioPlayer {
         second = actNum(second);
 
         return `${minute}:${second}`;
-    }
-
-    extend(object) {
-        let args = Array.prototype.slice.call(arguments, 1);
-
-        for (let i = 0, source; source = args[i]; i++) {
-            if (!source) continue;
-            for (let property in source) {
-                object[property] = source[property];
-            }
-        }
-
-        return object;
     }
 }
 
